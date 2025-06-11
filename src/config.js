@@ -15,6 +15,16 @@ export const config = {
     ttsModel: process.env.TTS_MODEL || 'tts-1',
     ttsVoice: process.env.TTS_VOICE || 'nova',
   },
+  deepseek: {
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    model: process.env.DEEPSEEK_MODEL || 'deepseek-chat',
+    baseURL: 'https://api.deepseek.com/v1'
+  },
+  ai: {
+    // Configuração do modo de operação
+    mode: process.env.AI_MODE || 'hybrid', // 'openai', 'deepseek', 'hybrid'
+    fallbackToOpenAI: process.env.FALLBACK_TO_OPENAI !== 'false',
+  },
   whatsapp: {
     sessionName: process.env.SESSION_NAME || 'whatsapp-bot',
     authDir: join(__dirname, '..', 'auth_info_baileys'),
@@ -54,7 +64,20 @@ export const config = {
 };
 
 // Validação de configuração
-if (!config.openai.apiKey || config.openai.apiKey === 'your_openai_api_key_here') {
+if (!config.openai.apiKey || config.openai.apiKey === 'YOUR_OPENAI_API_KEY_HERE') {
   console.error('❌ OPENAI_API_KEY não configurada! Configure no arquivo .env');
   process.exit(1);
+}
+
+// Validação condicional do DeepSeek
+if (config.ai.mode === 'deepseek' || config.ai.mode === 'hybrid') {
+  if (!config.deepseek.apiKey || config.deepseek.apiKey === 'YOUR_DEEPSEEK_API_KEY_HERE') {
+    if (config.ai.mode === 'deepseek') {
+      console.error('❌ DEEPSEEK_API_KEY não configurada! Configure no arquivo .env');
+      process.exit(1);
+    } else {
+      console.warn('⚠️ DEEPSEEK_API_KEY não configurada. Usando apenas OpenAI.');
+      config.ai.mode = 'openai';
+    }
+  }
 } 

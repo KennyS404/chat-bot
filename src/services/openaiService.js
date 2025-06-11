@@ -14,6 +14,7 @@ export class OpenAIService {
     }
     
     this.openai = new OpenAI({
+      baseURL: 'https://api.deepseek.com',
       apiKey: config.openai.apiKey,
     });
   }
