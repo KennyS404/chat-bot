@@ -1,0 +1,12 @@
+node_modules/
+.env
+auth_info_baileys/
+temp/
+*.log
+.DS_Store
+dist/
+build/
+*.mp3
+*.ogg
+*.wav
+*.opus 

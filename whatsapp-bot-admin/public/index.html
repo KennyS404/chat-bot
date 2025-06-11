@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Bot Admin - Painel de Controle</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <i class="fab fa-whatsapp login-icon"></i>
+                <h1>WhatsApp Bot Admin</h1>
+                <p>Faça login para acessar o painel de controle</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" name="username" required placeholder="Digite seu usuário">
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" name="password" required placeholder="Digite sua senha">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+            </form>
+            <div id="loginError" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard-container" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <i class="fab fa-whatsapp"></i>
+                <h2>Bot Admin</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-page="status">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Status</span>
+                </a>
+                <a href="#" class="nav-item" data-page="connection">
+                    <i class="fas fa-plug"></i>
+                    <span>Conexão</span>
+                </a>
+                <a href="#" class="nav-item" data-page="stats">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Estatísticas</span>
+                </a>
+                <a href="#" class="nav-item" data-page="logs">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Logs</span>
+                </a>
+                <a href="#" class="nav-item" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Configurações</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="btn btn-outline">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <h1 id="pageTitle">Status do Bot</h1>
+                <div class="header-actions">
+                    <span id="connectionStatus" class="connection-status">
+                        <i class="fas fa-circle"></i>
+                        <span>Verificando...</span>
+                    </span>
+                </div>
+            </header>
+
+            <!-- Content Pages -->
+            <div class="content-wrapper">
+                <!-- Status Page -->
+                <div id="statusPage" class="page-content active">
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="status-info">
+                                <h3>Status do Bot</h3>
+                                <p id="botStatus" class="status-value">Verificando...</p>
+                            </div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fab fa-whatsapp"></i>
+                            </div>
+                            <div class="status-info">
+                                <h3>WhatsApp</h3>
+                                <p id="whatsappStatus" class="status-value">Desconectado</p>
+                            </div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="status-info">
+                                <h3>Número</h3>
+                                <p id="phoneNumber" class="status-value">-</p>
+                            </div>
+                        </div>
+                        
+                        <div class="status-card">
+                            <div class="status-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="status-info">
+                                <h3>Tempo Online</h3>
+                                <p id="uptime" class="status-value">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="quick-actions">
+                        <h2>Ações Rápidas</h2>
+                        <div class="action-buttons">
+                            <button id="reconnectBtn" class="btn btn-primary">
+                                <i class="fas fa-sync"></i> Reconectar
+                            </button>
+                            <button id="disconnectBtn" class="btn btn-danger">
+                                <i class="fas fa-power-off"></i> Desconectar
+                            </button>
+                            <button id="requestQrBtn" class="btn btn-secondary">
+                                <i class="fas fa-qrcode"></i> Novo QR Code
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connection Page -->
+                <div id="connectionPage" class="page-content">
+                    <div class="connection-container">
+                        <div class="qr-section">
+                            <h2>Conexão WhatsApp</h2>
+                            <div id="qrContainer" class="qr-container">
+                                <div class="qr-placeholder">
+                                    <i class="fas fa-qrcode"></i>
+                                    <p>QR Code aparecerá aqui</p>
+                                </div>
+                            </div>
+                            <div class="connection-instructions">
+                                <h3>Como conectar:</h3>
+                                <ol>
+                                    <li>Abra o WhatsApp no seu celular</li>
+                                    <li>Vá em Configurações > Aparelhos conectados</li>
+                                    <li>Clique em "Conectar um aparelho"</li>
+                                    <li>Escaneie o QR Code acima</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Page -->
+                <div id="statsPage" class="page-content">
+                    <div class="stats-container">
+                        <h2>Estatísticas do Bot</h2>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-envelope"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h4>Mensagens Recebidas</h4>
+                                    <p id="messagesReceived" class="stat-value">0</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h4>Mensagens Processadas</h4>
+                                    <p id="messagesProcessed" class="stat-value">0</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-microphone"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h4>Áudios Corrigidos</h4>
+                                    <p id="audiosCorrected" class="stat-value">0</p>
+                                </div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <h4>Erros</h4>
+                                    <p id="errors" class="stat-value">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container">
+                            <canvas id="statsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Logs Page -->
+                <div id="logsPage" class="page-content">
+                    <div class="logs-container">
+                        <div class="logs-header">
+                            <h2>Logs do Sistema</h2>
+                            <div class="logs-actions">
+                                <button class="btn btn-sm btn-outline" id="clearLogsBtn">
+                                    <i class="fas fa-trash"></i> Limpar
+                                </button>
+                                <button class="btn btn-sm btn-outline" id="exportLogsBtn">
+                                    <i class="fas fa-download"></i> Exportar
+                                </button>
+                            </div>
+                        </div>
+                        <div id="logsContent" class="logs-content">
+                            <!-- Logs serão inseridos aqui -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Page -->
+                <div id="settingsPage" class="page-content">
+                    <div class="settings-container">
+                        <h2>Configurações</h2>
+                        <div class="settings-section">
+                            <h3>Configurações do Bot</h3>
+                            <form id="settingsForm" class="settings-form">
+                                <div class="form-group">
+                                    <label for="botUrl">URL do Bot</label>
+                                    <input type="text" id="botUrl" name="botUrl" placeholder="http://localhost:8080">
+                                </div>
+                                <div class="form-group">
+                                    <label for="autoReconnect">
+                                        <input type="checkbox" id="autoReconnect" name="autoReconnect" checked>
+                                        Reconectar automaticamente
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label for="notifications">
+                                        <input type="checkbox" id="notifications" name="notifications">
+                                        Ativar notificações
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Salvar Configurações
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html> 
