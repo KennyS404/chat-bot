@@ -75,12 +75,12 @@ export class WhatsAppService {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
-        console.log('\n📱 Escaneie o QR Code abaixo com seu WhatsApp:\n');
-        qrcode.generate(qr, { small: true });
+        // Usar função otimizada para melhor visualização no Render
+        this.displayQRCodeOptimized(qr);
         
         // Enviar QR para o admin
         this.socketService.setQRCode(qr);
-        this.socketService.sendLog('info', 'Novo QR Code gerado');
+        this.socketService.sendLog('info', 'Novo QR Code gerado com visualização otimizada');
       }
 
       if (connection === 'close') {
@@ -454,5 +454,91 @@ export class WhatsAppService {
 
   async stop() {
     this.sock?.end();
+  }
+
+  // Função para melhorar visualização do QR code no Render
+  displayQRCodeOptimized(qrString) {
+    try {
+      // Não usar console.clear() no ambiente de deploy
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER;
+      
+      if (!isProduction) {
+        console.clear();
+      }
+      
+      // Espaçamento inicial
+      console.log('\n'.repeat(5));
+      
+      // Cabeçalho chamativo com melhor espaçamento
+      const header = '🔥'.repeat(15) + ' WHATSAPP QR CODE ' + '🔥'.repeat(15);
+      console.log(header);
+      console.log('█'.repeat(header.length));
+      console.log('\n');
+      
+      // QR code principal - tamanho médio (melhor compatibilidade)
+      console.log('📱 ESCANEIE COM SEU WHATSAPP:');
+      console.log('━'.repeat(60));
+      console.log('\n');
+      
+      // QR code principal com tamanho médio
+      qrcode.generate(qrString, {
+        small: true,
+        errorCorrectionLevel: 'H',
+        margin: 2
+      });
+      
+      console.log('\n');
+      console.log('━'.repeat(60));
+      console.log('\n');
+      
+      // Versão ainda mais compacta como backup
+      console.log('📱 VERSÃO COMPACTA (backup):');
+      console.log('─'.repeat(35));
+      console.log('\n');
+      
+      qrcode.generate(qrString, {
+        small: true,
+        errorCorrectionLevel: 'M',
+        margin: 1
+      });
+      
+      console.log('\n');
+      console.log('─'.repeat(35));
+      console.log('\n');
+      
+      // Instruções passo a passo
+      console.log('🔥'.repeat(50));
+      console.log('COMO CONECTAR:');
+      console.log('🔥'.repeat(50));
+      console.log('👉 1. Abra o WhatsApp no celular');
+      console.log('👉 2. Toque nos 3 pontos (⋮) no canto superior');
+      console.log('👉 3. Selecione "Dispositivos conectados"');
+      console.log('👉 4. Toque em "Conectar um dispositivo"');
+      console.log('👉 5. Escaneie um dos QR codes acima');
+      console.log('👉 6. Aguarde alguns segundos...');
+      console.log('🔥'.repeat(50));
+      console.log('\n');
+      
+      // Dicas específicas para Render
+      console.log('🔧 DICAS PARA O RENDER:');
+      console.log('• Expanda os logs para ver o QR completo');
+      console.log('• Use CTRL+F e busque por "▄" para encontrar o QR');
+      console.log('• Ambos os QR codes devem funcionar');
+      console.log('• QR codes são renovados a cada tentativa');
+      console.log('• Tente aproximar/afastar o celular da tela');
+      console.log('\n');
+      
+      // Status
+      console.log('⏰ Aguardando conexão... QR válido por alguns minutos');
+      console.log('🔄 Se expirar, o bot irá gerar um novo automaticamente');
+      console.log('═'.repeat(70));
+      console.log('\n');
+      
+    } catch (error) {
+      logger.error('Erro ao exibir QR code otimizado:', error);
+      // Fallback simples e garantido
+      console.log('\n📱 QR Code WhatsApp:\n');
+      qrcode.generate(qrString, { small: true });
+    }
   }
 } 

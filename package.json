@@ -9,6 +9,7 @@
     "dev": "node --watch src/index.js",
     "setup-env": "node setup-env.js",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "test-qr": "node test-qr.js",
     "setup": "node test-setup.js",
     "status": "node check-status.js",
     "clean": "rm -rf auth_info_baileys temp/*.mp3 temp/*.ogg temp/*.wav"
