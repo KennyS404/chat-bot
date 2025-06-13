@@ -1,0 +1,16 @@
+name: chat-bot
+service:
+  name: chat-bot
+  type: web
+  ports:
+    - port: 8000
+      protocol: http
+  routes:
+    - path: /
+      protocol: http
+  env:
+    - name: NODE_ENV
+      value: production
+  build:
+    builder: dockerfile
+    dockerfile: Dockerfile 
