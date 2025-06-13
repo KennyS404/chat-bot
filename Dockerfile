@@ -31,8 +31,8 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p temp auth_info_baileys
 
-# Verify FFmpeg installation
-RUN ffmpeg -version
+# Make start script executable
+RUN chmod +x start.sh
 
 # Expose ports
 EXPOSE 8000 8080
@@ -41,5 +41,5 @@ EXPOSE 8000 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node check-status.js || exit 1
 
-# Start the app
-CMD ["npm", "start"] 
+# Start the app using the startup script
+CMD ["./start.sh"] 
