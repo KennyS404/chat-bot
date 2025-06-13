@@ -28,11 +28,16 @@ RUN npm install
 # Copy app source
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p temp auth_info_baileys
+# Create necessary directories and set permissions
+RUN mkdir -p temp auth_info_baileys && \
+    chmod 777 temp auth_info_baileys
 
-# Make start script executable
-RUN chmod +x start.sh
+# Make start script executable and verify FFmpeg
+RUN chmod +x start.sh && \
+    ffmpeg -version
+
+# Set environment variables
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
 
 # Expose ports
 EXPOSE 8000 8080
@@ -42,4 +47,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node check-status.js || exit 1
 
 # Start the app using the startup script
-CMD ["./start.sh"] 
+ENTRYPOINT ["./start.sh"] 
