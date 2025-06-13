@@ -1,12 +1,13 @@
 # WhatsApp Audio Corrector Bot - Dockerfile
-FROM node:18-slim
+FROM node:18-bullseye
 
-# Install system dependencies including FFmpeg
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y \
     ffmpeg \
     python3 \
     python3-pip \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -29,6 +30,9 @@ COPY . .
 
 # Create necessary directories
 RUN mkdir -p temp auth_info_baileys
+
+# Verify FFmpeg installation
+RUN ffmpeg -version
 
 # Expose ports
 EXPOSE 8000 8080
