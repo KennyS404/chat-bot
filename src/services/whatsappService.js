@@ -242,96 +242,135 @@ export class WhatsAppService {
       // Enviar mensagem de processamento
       await this.sendMessage(from, config.messages.processing);
 
-      // Baixar o áudio
-      logger.info('Baixando áudio...');
-      const audioBuffer = await downloadMediaMessage(
-        message,
-        'buffer',
-        {},
-        {
-          logger,
-          reuploadRequest: this.sock.updateMediaMessage
+      try {
+        // Baixar o áudio
+        logger.info('Baixando áudio...');
+        const audioBuffer = await downloadMediaMessage(
+          message,
+          'buffer',
+          {},
+          {
+            logger,
+            reuploadRequest: this.sock.updateMediaMessage
+          }
+        );
+        logger.info(`Áudio baixado - Tamanho: ${audioBuffer.length} bytes`);
+
+        // Verificar duração do áudio
+        logger.info('Verificando duração do áudio...');
+        const duration = await this.audioService.getAudioDuration(audioBuffer, messageId);
+        logger.info(`Duração do áudio: ${duration} segundos`);
+        
+        if (duration > config.app.maxAudioDuration) {
+          await this.sendMessage(from, config.messages.audioTooLong);
+          this.socketService.incrementMessageProcessed();
+          return;
         }
-      );
-      logger.info(`Áudio baixado - Tamanho: ${audioBuffer.length} bytes`);
 
-      // Verificar duração do áudio
-      logger.info('Verificando duração do áudio...');
-      const duration = await this.audioService.getAudioDuration(audioBuffer, messageId);
-      logger.info(`Duração do áudio: ${duration} segundos`);
-      
-      if (duration > config.app.maxAudioDuration) {
-        await this.sendMessage(from, config.messages.audioTooLong);
-        this.socketService.incrementMessageProcessed();
-        return;
-      }
+        // Salvar áudio no banco de dados
+        logger.info('Salvando áudio no banco de dados...');
+        const audioData = {
+          buffer: audioBuffer,
+          duration,
+          mimeType: 'audio/ogg'
+        };
+        const savedAudio = await databaseService.storeAudio(from, audioData);
+        logger.info('Áudio salvo com sucesso');
 
-      // Salvar áudio no banco de dados
-      logger.info('Salvando áudio no banco de dados...');
-      const audioData = {
-        buffer: audioBuffer,
-        duration,
-        mimeType: 'audio/ogg'
-      };
-      const savedAudio = await databaseService.storeAudio(from, audioData);
-      logger.info('Áudio salvo com sucesso');
+        // Converter áudio para MP3
+        logger.info('Convertendo áudio para MP3...');
+        const mp3Buffer = await this.audioService.downloadAndConvert(audioBuffer, messageId);
+        logger.info(`Áudio convertido - Tamanho MP3: ${mp3Buffer.length} bytes`);
 
-      // Converter áudio para MP3
-      logger.info('Convertendo áudio para MP3...');
-      const mp3Buffer = await this.audioService.downloadAndConvert(audioBuffer, messageId);
-      logger.info(`Áudio convertido - Tamanho MP3: ${mp3Buffer.length} bytes`);
+        // Processar com OpenAI
+        logger.info('Enviando para OpenAI...');
+        const result = await this.openaiService.processAudio(mp3Buffer);
+        logger.info('Resposta da OpenAI recebida');
 
-      // Processar com OpenAI
-      logger.info('Enviando para OpenAI...');
-      const result = await this.openaiService.processAudio(mp3Buffer);
-      logger.info('Resposta da OpenAI recebida');
+        // Atualizar transcrição no banco de dados
+        await databaseService.updateAudioTranscription(
+          savedAudio.id,
+          result.transcription,
+          result.correction
+        );
 
-      // Atualizar transcrição no banco de dados
-      await databaseService.updateAudioTranscription(
-        savedAudio.id,
-        result.transcription,
-        result.correction
-      );
+        // Enviar resposta de texto
+        let response = `🎯 *Transcrição:*\n_"${result.transcription}"_\n\n`;
+        response += `📝 *Análise:*\n${result.correction}`;
 
-      // Enviar resposta de texto
-      let response = `🎯 *Transcrição:*\n_"${result.transcription}"_\n\n`;
-      response += `📝 *Análise:*\n${result.correction}`;
-
-      await this.sendMessage(from, response);
-      
-      // Se houver correções, enviar também o áudio
-      if (result.hasCorrections && result.audioResponse) {
-        logger.info('Enviando áudio com a correção...');
-        try {
-          await this.sendAudio(from, result.audioResponse, result.transcription);
-          this.socketService.incrementAudioCorrected();
-        } catch (audioError) {
-          logger.error('Falha ao enviar áudio, tentando alternativa...');
-          
-          // Tentar enviar como documento de áudio se PTT falhar
+        await this.sendMessage(from, response);
+        
+        // Se houver correções, enviar também o áudio
+        if (result.hasCorrections && result.audioResponse) {
+          logger.info('Enviando áudio com a correção...');
           try {
-            await this.sock.sendMessage(from, {
-              document: result.audioResponse,
-              mimetype: 'audio/mpeg',
-              fileName: 'correcao_gramatical.mp3'
-            });
-            logger.info('Áudio enviado como documento');
+            await this.sendAudio(from, result.audioResponse, result.transcription);
             this.socketService.incrementAudioCorrected();
-          } catch (docError) {
-            logger.error('Falha ao enviar áudio como documento:', docError);
-            // Enviar mensagem informando o erro
-            await this.sendMessage(from, '⚠️ Não foi possível enviar o áudio com a correção, mas o texto está acima.');
-            this.socketService.incrementErrors();
+          } catch (audioError) {
+            logger.error('Falha ao enviar áudio, tentando alternativa...', {
+              error: audioError.message,
+              code: audioError.code,
+              stack: audioError.stack
+            });
+            
+            // Tentar enviar como documento de áudio se PTT falhar
+            try {
+              await this.sock.sendMessage(from, {
+                document: result.audioResponse,
+                mimetype: 'audio/mpeg',
+                fileName: 'correcao_gramatical.mp3'
+              });
+              logger.info('Áudio enviado como documento');
+              this.socketService.incrementAudioCorrected();
+            } catch (docError) {
+              logger.error('Falha ao enviar áudio como documento:', {
+                error: docError.message,
+                code: docError.code,
+                stack: docError.stack
+              });
+              // Enviar mensagem informando o erro
+              await this.sendMessage(from, '⚠️ Não foi possível enviar o áudio com a correção, mas o texto está acima.');
+              this.socketService.incrementErrors();
+            }
           }
         }
+        
+        logger.info('Resposta enviada com sucesso');
+        this.socketService.incrementMessageProcessed();
+        this.socketService.sendLog('info', 'Áudio processado com sucesso');
+
+      } catch (error) {
+        logger.error('Erro ao processar áudio:', error.message || error);
+        logger.error('Stack trace completo:', error.stack);
+        logger.error('Detalhes do erro:', {
+          message: error.message,
+          code: error.code,
+          status: error.status,
+          response: error.response?.data,
+          type: error.constructor.name,
+          cause: error.cause,
+          messageId,
+          from,
+          messageType
+        });
+
+        // Verificar tipo específico de erro
+        if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+          await this.sendMessage(from, '⚠️ Erro de conexão com o serviço. Por favor, tente novamente em alguns instantes.');
+        } else if (error.message?.includes('invalid audio file')) {
+          await this.sendMessage(from, '⚠️ O arquivo de áudio parece estar corrompido. Por favor, tente enviar novamente.');
+        } else {
+          await this.sendMessage(from, config.messages.error);
+        }
+
+        this.socketService.incrementErrors();
+        this.socketService.sendLog('error', `Erro ao processar áudio: ${error.message}`);
+      } finally {
+        this.processingMessages.delete(messageId);
       }
-      
-      logger.info('Resposta enviada com sucesso');
-      this.socketService.incrementMessageProcessed();
-      this.socketService.sendLog('info', 'Áudio processado com sucesso');
 
     } catch (error) {
-      logger.error('Erro ao processar áudio:', error.message || error);
+      logger.error('Erro ao processar mensagem:', error);
       logger.error('Stack trace completo:', error.stack);
       logger.error('Detalhes do erro:', {
         message: error.message,
@@ -343,9 +382,7 @@ export class WhatsAppService {
       });
       await this.sendMessage(from, config.messages.error);
       this.socketService.incrementErrors();
-      this.socketService.sendLog('error', `Erro ao processar áudio: ${error.message}`);
-    } finally {
-      this.processingMessages.delete(messageId);
+      this.socketService.sendLog('error', `Erro ao processar mensagem: ${error.message}`);
     }
   }
 

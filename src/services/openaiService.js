@@ -4,19 +4,91 @@ import { logger } from '../logger.js';
 
 export class OpenAIService {
   constructor() {
-    // Check if OpenAI API key is configured
-    if (!config.openai.apiKey || config.openai.apiKey === 'your_openai_api_key_here') {
-      logger.error('❌ OpenAI API Key não configurada!');
-      logger.error('   Configure OPENAI_API_KEY no arquivo .env');
-      logger.error('   Obtenha sua chave em: https://platform.openai.com/api-keys');
-      logger.error('   Execute: npm run setup-env para criar o arquivo .env');
-      throw new Error('OpenAI API key missing');
+    // Check if OpenAI API key is configured (required at least for fallback)
+    if (!config.openai.apiKey && !config.deepseek.apiKey) {
+      logger.error('❌ Nenhuma chave de API configurada!');
+      logger.error('   Configure OPENAI_API_KEY ou DEEPSEEK_API_KEY no arquivo .env');
+      throw new Error('API key missing');
     }
-    
-    this.openai = new OpenAI({
-      baseURL: 'https://api.deepseek.com',
-      apiKey: config.openai.apiKey,
-    });
+
+    // Selecionar provedor conforme o modo definido nas configurações
+    let clientOptions = {};
+    switch (config.ai.mode) {
+      case 'deepseek': {
+        clientOptions = {
+          baseURL: config.deepseek.baseURL,
+          apiKey: config.deepseek.apiKey,
+        };
+        break;
+      }
+      case 'hybrid':
+      case 'openai':
+      default: {
+        clientOptions = {
+          apiKey: config.openai.apiKey,
+        };
+        break;
+      }
+    }
+
+    // Criar cliente
+    this.openai = new OpenAI(clientOptions);
+
+    // Testar a chave da API ao inicializar
+    this.testAPIKey();
+  }
+
+  async testAPIKey() {
+    try {
+      logger.info('🔑 Testando chave da API OpenAI...');
+      
+      // Testar acesso à API de modelos
+      const models = await this.openai.models.list();
+      logger.info('✅ Acesso à API de modelos OK');
+      logger.info(`📋 Modelos disponíveis: ${models.data.map(m => m.id).join(', ')}`);
+
+      // Testar acesso à API de áudio
+      const testText = 'Teste de permissões da API.';
+      const testAudio = await this.openai.audio.speech.create({
+        model: config.openai.ttsModel,
+        voice: config.openai.ttsVoice,
+        input: testText,
+      });
+      logger.info('✅ Acesso à API de áudio OK');
+
+      // Verificar modelo Whisper
+      if (models.data.some(m => m.id === config.openai.whisperModel)) {
+        logger.info(`✅ Modelo ${config.openai.whisperModel} disponível`);
+      } else {
+        logger.warn(`⚠️ Modelo ${config.openai.whisperModel} não encontrado na lista de modelos disponíveis`);
+      }
+
+      logger.info('✅ Teste de API concluído com sucesso!');
+    } catch (error) {
+      logger.error('❌ Erro ao testar API:', error);
+      logger.error('Detalhes do erro:', {
+        message: error.message,
+        status: error.status,
+        code: error.code,
+        type: error.type,
+        response: error.response?.data
+      });
+
+      if (error.status === 401) {
+        logger.error('❌ Chave da API inválida ou expirada');
+        logger.error('   Verifique se a chave está correta e tem as permissões necessárias');
+        logger.error('   Obtenha uma nova chave em: https://platform.openai.com/api-keys');
+      } else if (error.status === 429) {
+        logger.error('❌ Limite de requisições excedido');
+        logger.error('   Aguarde alguns minutos e tente novamente');
+      } else if (error.status === 403) {
+        logger.error('❌ Permissões insuficientes');
+        logger.error('   Verifique se sua conta tem acesso aos modelos necessários');
+        logger.error('   Modelos necessários: whisper-1, tts-1');
+      }
+
+      throw error;
+    }
   }
 
   async transcribeAudio(audioBuffer) {
@@ -41,8 +113,25 @@ export class OpenAIService {
         message: error.message,
         status: error.status,
         code: error.code,
-        type: error.type
+        type: error.type,
+        response: error.response?.data,
+        stack: error.stack,
+        cause: error.cause,
+        audioSize: audioBuffer.length,
+        audioType: typeof audioBuffer,
+        isBuffer: Buffer.isBuffer(audioBuffer)
       });
+      
+      // Verificar se é um erro de API
+      if (error.response?.data) {
+        logger.error('Resposta da API OpenAI:', error.response.data);
+      }
+      
+      // Verificar se é um erro de rede
+      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+        logger.error('Erro de conexão com a API OpenAI');
+      }
+      
       throw error;
     }
   }

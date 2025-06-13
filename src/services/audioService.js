@@ -47,10 +47,16 @@ export class AudioService {
       await fs.writeFile(inputPath, audioBuffer);
       logger.info(`Arquivo salvo, tamanho: ${audioBuffer.length} bytes`);
 
+      // Verificar se o arquivo foi salvo corretamente
+      const stats = await fs.stat(inputPath);
+      if (stats.size === 0) {
+        throw new Error('Arquivo de áudio vazio após salvar');
+      }
+
       // Converter para MP3 usando FFmpeg
       logger.info('Iniciando conversão com FFmpeg...');
       await new Promise((resolve, reject) => {
-        ffmpeg(inputPath)
+        const ffmpegProcess = ffmpeg(inputPath)
           .toFormat('mp3')
           .audioCodec('libmp3lame')
           .audioChannels(1)
@@ -67,10 +73,32 @@ export class AudioService {
           })
           .on('error', (err) => {
             logger.error('Erro FFmpeg:', err);
+            logger.error('Detalhes do erro FFmpeg:', {
+              message: err.message,
+              code: err.code,
+              stack: err.stack,
+              inputPath,
+              outputPath,
+              ffmpegPath: ffmpeg.path
+            });
             reject(err);
           })
           .save(outputPath);
+
+        // Adicionar timeout para o processo FFmpeg
+        setTimeout(() => {
+          if (ffmpegProcess) {
+            ffmpegProcess.kill('SIGKILL');
+            reject(new Error('Timeout na conversão do áudio'));
+          }
+        }, 30000); // 30 segundos de timeout
       });
+
+      // Verificar se o arquivo de saída foi gerado
+      const outputStats = await fs.stat(outputPath);
+      if (outputStats.size === 0) {
+        throw new Error('Arquivo MP3 vazio após conversão');
+      }
 
       // Ler o arquivo convertido
       logger.info(`Lendo arquivo convertido: ${outputPath}`);
@@ -83,14 +111,38 @@ export class AudioService {
       return mp3Buffer;
     } catch (error) {
       logger.error('Erro ao processar áudio:', error);
-      logger.error('Detalhes:', {
+      logger.error('Detalhes do erro:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
         inputPath,
         outputPath,
         messageId,
-        errorMessage: error.message
+        audioSize: audioBuffer.length,
+        audioType: typeof audioBuffer,
+        isBuffer: Buffer.isBuffer(audioBuffer),
+        ffmpegPath: ffmpeg.path
       });
+
+      // Verificar se é um erro de FFmpeg
+      if (error.message?.includes('ffmpeg')) {
+        logger.error('Erro específico do FFmpeg:', {
+          ffmpegVersion: await this.getFFmpegVersion(),
+          ffmpegPath: ffmpeg.path
+        });
+      }
+
       await this.cleanup(messageId);
       throw error;
+    }
+  }
+
+  async getFFmpegVersion() {
+    try {
+      const { stdout } = await exec('ffmpeg -version');
+      return stdout.split('\n')[0];
+    } catch (error) {
+      return 'FFmpeg version not available';
     }
   }
 

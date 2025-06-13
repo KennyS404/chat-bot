@@ -9,4 +9,6 @@ build/
 *.mp3
 *.ogg
 *.wav
-*.opus 
+*.opus
+.env.backup
+temp.env 

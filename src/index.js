@@ -9,13 +9,24 @@ if (majorVersion < 20) {
   process.exit(1);
 }
 
-// Polyfill para crypto no Node.js
+// Polyfill para crypto no Node.js - DEVE ser configurado ANTES de qualquer import
 import { webcrypto } from 'crypto';
+
+// Configurar crypto global de forma mais robusta
 if (!globalThis.crypto) {
   globalThis.crypto = webcrypto;
 }
 
-// Garantir que o webcrypto está disponível
+// Garantir que o webcrypto está disponível e configurado adequadamente
+if (!globalThis.crypto || !globalThis.crypto.subtle) {
+  // Forçar a configuração do crypto
+  globalThis.crypto = {
+    ...webcrypto,
+    subtle: webcrypto.subtle
+  };
+}
+
+// Verificação final
 if (!globalThis.crypto || !globalThis.crypto.subtle) {
   console.error('❌ Crypto API não disponível. Certifique-se de que está usando Node.js 20+');
   process.exit(1);
