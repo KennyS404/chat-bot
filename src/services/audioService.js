@@ -17,8 +17,12 @@ export class AudioService {
 
   async checkFFmpeg() {
     try {
-      const { stdout } = await execAsync('ffmpeg -version');
+      const ffmpegPath = process.env.FFMPEG_PATH || 'ffmpeg';
+      const { stdout } = await execAsync(`${ffmpegPath} -version`);
       logger.info('FFmpeg encontrado:', stdout.split('\n')[0]);
+      
+      // Configure fluent-ffmpeg to use the correct path
+      ffmpeg.setFfmpegPath(ffmpegPath);
     } catch (error) {
       logger.error('FFmpeg não encontrado! Instale com: sudo apt install ffmpeg');
       throw new Error('FFmpeg não está instalado');
