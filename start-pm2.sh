@@ -18,7 +18,7 @@ pm2 delete all 2>/dev/null || true
 
 # Iniciar aplicações com PM2
 echo "🚀 Iniciando aplicações com PM2..."
-pm2 start ecosystem.config.js
+pm2 start ecosystem.json
 
 # Salvar configuração do PM2
 echo "💾 Salvando configuração do PM2..."

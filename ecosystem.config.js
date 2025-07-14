@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'whatsapp-bot',
       script: 'src/index.js',
-      cwd: '/home/kenny/Documents/projeto-chat',
+      cwd: '/root/chat-bot',
       instances: 1,
       autorestart: true,
       watch: false,
@@ -20,7 +20,7 @@ module.exports = {
     {
       name: 'whatsapp-admin',
       script: 'server.js',
-      cwd: '/home/kenny/Documents/projeto-chat/whatsapp-bot-admin',
+      cwd: '/root/chat-bot/whatsapp-bot-admin',
       instances: 1,
       autorestart: true,
       watch: false,
