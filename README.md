@@ -25,11 +25,9 @@ npm start
 
 ## 🚀 Funcionalidades
 
-- **🎯 Transcrição de áudios**: Converte mensagens de voz em texto usando Whisper da OpenAI
-- **✏️ Correção gramatical aprimorada**: Corrige e melhora texto usando linguagem formal e gentil
-- **🎵 Detecção de conteúdo**: Identifica automaticamente música, perguntas e conversas normais
-- **💬 Conversação interativa**: Mantém diálogo natural no mesmo idioma do usuário
-- **🧹 Gerenciamento de contexto**: Comando "limpar" para iniciar nova conversa
+- **Transcrição de áudios**: Converte mensagens de voz em texto usando Whisper da OpenAI
+- **Correção gramatical**: Analisa e corrige erros de português usando GPT-4
+- **Resposta em áudio**: Gera um novo áudio com a pronúncia correta
 - **Interface administrativa**: Painel web para gerenciar o bot
 - **Monitoramento em tempo real**: Acompanhe estatísticas e status do bot
 - **Gerenciamento remoto**: Conecte/desconecte o WhatsApp sem usar o terminal
@@ -133,17 +131,15 @@ http://localhost:3000
 
 1. Envie um áudio para o número conectado
 2. O bot irá:
-   - 🎯 Transcrever o áudio
-   - ✏️ Corrigir gramática com linguagem formal e gentil
-   - 🎵 Detectar se contém música ou perguntas
-   - 💬 Responder naturalmente no mesmo idioma
-   - 📝 Mostrar transcrição, correção e conversa
+   - Transcrever o áudio
+   - Analisar a gramática
+   - Enviar a transcrição e correções
+   - Se houver erros, enviar um áudio com a pronúncia correta
 
 ### Comandos Especiais
 
 - `ping` - Verifica se o bot está funcionando
-- `limpar` - Limpa o contexto da conversa para começar nova interação
-- `testaudio` - Teste de áudio (temporariamente desabilitado)
+- `testaudio` - Gera um áudio de teste
 
 ## 🖥️ Interface Administrativa
 

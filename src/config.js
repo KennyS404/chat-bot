@@ -56,8 +56,8 @@ export const config = {
     enableAudioResponse: process.env.ENABLE_AUDIO_RESPONSE !== 'false',
   },
   messages: {
-    welcome: 'Olá! Sou um assistente de IA aprimorado que:\n\n🎯 *Transcreve* seus áudios\n✏️ *Corrige* gramática com linguagem formal e gentil\n🎵 *Detecta* música e perguntas\n💬 *Conversa* naturalmente no seu idioma\n\nEnvie um áudio para começar! Use "limpar" para nova conversa.',
-    processing: '🎧 Processando seu áudio com IA aprimorada...',
+    welcome: 'Olá! Sou um chatbot baseado em inteligência artificial, desenvolvido pelo Departamento de Engenharia de Computação da Unoesc Chapecó. Meu objetivo é facilitar a comunicação por meio de áudios e auxiliar na pronúncia de diversos idiomas.',
+    processing: '🎧 Processando seu áudio...',
     error: '❌ Desculpe, ocorreu um erro ao processar seu áudio. Por favor, tente novamente.',
     audioTooLong: '⏱️ O áudio é muito longo. Por favor, envie áudios de até 2 minutos.',
     notAudio: '🎵 Por favor, envie apenas mensagens de áudio.',
