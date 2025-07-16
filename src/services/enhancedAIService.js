@@ -76,14 +76,9 @@ export class EnhancedAIService {
     }
   }
 
-  async correctGrammarWithCommand(text, contentType) {
+  async correctGrammarWithCommand(text) {
     try {
       logger.info('✏️ Corrigindo gramática com comando específico...');
-      
-      // Se for música, não corrigir gramática
-      if (contentType === 'MUSIC') {
-        return "🎵 Detectado fragmento de música - não aplicando correção gramatical";
-      }
       
       const response = await this.deepseek.chat.completions.create({
         model: 'deepseek-chat',
@@ -154,55 +149,31 @@ export class EnhancedAIService {
       // Definir prompt baseado no tipo de conteúdo
       switch (contentType) {
         case 'MUSIC':
-          systemPrompt = `Você é um assistente musical amigável e especializado. 
-          
-          REGRAS IMPORTANTES:
-          - Identifique a música/artista se possível
-          - Comente sobre o gênero musical e época
+          systemPrompt = `Você é um assistente musical amigável. 
+          Se o usuário mencionar música, cante, ou fale sobre música:
+          - Identifique a música se possível
+          - Comente sobre o gênero musical
           - Mantenha um tom alegre e musical
           - Responda no mesmo idioma do usuário
-          - Seja específico e informativo
-          - Faça perguntas sobre preferências musicais
-          
-          EXEMPLOS:
-          - "Que clássico dos Beatles! 'Help!' é de 1965. Você gosta de rock dos anos 60?"
-          - "Essa música tem uma melodia incrível! Qual é seu gênero favorito?"
-          - "Conheço essa música! É muito boa. Você toca algum instrumento?"`;
+          - Seja natural e conversacional`;
           break;
           
         case 'QUESTION':
-          systemPrompt = `Você é um assistente de conhecimento geral muito útil.
-          
-          REGRAS IMPORTANTES:
+          systemPrompt = `Você é um assistente de conhecimento geral.
+          Se o usuário fizer uma pergunta:
           - Responda de forma educativa e clara
           - Use linguagem acessível
           - Responda no mesmo idioma do usuário
-          - Mantenha um tom amigável e útil
-          - Seja específico e detalhado
-          - Ofereça informações adicionais quando relevante
-          
-          EXEMPLOS:
-          - "Ótima pergunta! Vou explicar detalhadamente..."
-          - "Interessante! Deixe-me te ajudar com isso..."
-          - "Que pergunta inteligente! Aqui está a resposta..."`;
+          - Mantenha um tom amigável e útil`;
           break;
           
         default:
-          systemPrompt = `Você é um assistente conversacional muito amigável e envolvente.
-          
-          REGRAS IMPORTANTES:
+          systemPrompt = `Você é um assistente conversacional amigável.
+          Mantenha uma conversa natural e envolvente:
           - Responda no mesmo idioma do usuário
-          - Seja amigável, interessado e empático
-          - Faça perguntas específicas e relevantes
-          - Mantenha o contexto da conversa
-          - Seja natural e humano
-          - Mostre interesse genuíno
-          
-          EXEMPLOS:
-          - "Que legal! Como foi sua experiência com isso?"
-          - "Interessante! Me conte mais sobre..."
-          - "Entendo perfeitamente! O que você acha sobre..."
-          - "Que ótimo! Como posso te ajudar com isso?"`;
+          - Seja amigável e interessado
+          - Faça perguntas de volta quando apropriado
+          - Mantenha o contexto da conversa`;
       }
 
       const messages = [
@@ -220,8 +191,8 @@ export class EnhancedAIService {
       const response = await this.deepseek.chat.completions.create({
         model: 'deepseek-chat',
         messages: messages,
-        temperature: 0.8,
-        max_tokens: 400,
+        temperature: 0.7,
+        max_tokens: 300,
       });
 
       const assistantResponse = response.choices[0].message.content;
@@ -244,14 +215,14 @@ export class EnhancedAIService {
     } catch (error) {
       logger.error('❌ Erro na resposta interativa, usando fallback...');
       
-      // Fallback melhorado
+      // Fallback simples
       const fallbackResponses = {
-        'MUSIC': 'Que música incrível! Você tem um gosto musical muito bom. Qual é seu gênero favorito?',
-        'QUESTION': 'Excelente pergunta! Deixe-me te ajudar com isso. Posso explicar melhor se precisar.',
-        'CONVERSATION': 'Que interessante! Me conte mais sobre isso. Como foi sua experiência?'
+        'MUSIC': 'Que legal! Você gosta de música? Qual é seu gênero favorito?',
+        'QUESTION': 'Interessante pergunta! Posso ajudar com isso.',
+        'CONVERSATION': 'Entendo! Continue me contando mais sobre isso.'
       };
       
-      return fallbackResponses[contentType] || 'Obrigado por compartilhar isso comigo! É muito interessante.';
+      return fallbackResponses[contentType] || 'Obrigado por compartilhar isso comigo!';
     }
   }
 
@@ -288,8 +259,8 @@ export class EnhancedAIService {
       const contentType = await this.detectContentType(transcription);
       
       // 3. Corrigir gramática com comando específico
-      const correction = await this.correctGrammarWithCommand(transcription, contentType);
-      const hasCorrections = !correction.includes('✅') && !correction.includes('🎵');
+      const correction = await this.correctGrammarWithCommand(transcription);
+      const hasCorrections = !correction.includes('✅');
       
       // 4. Gerar resposta interativa
       const interactiveResponse = await this.generateInteractiveResponse(transcription, contentType, userId);

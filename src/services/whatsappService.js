@@ -296,17 +296,15 @@ export class WhatsAppService {
 
         // Enviar resposta completa
         let response = `🎯 *Transcrição:*\n_"${result.transcription}"_\n\n`;
+        response += `📝 *Correção:*\n${result.correction}\n\n`;
         
-        // Adicionar informação sobre tipo de conteúdo primeiro
+        // Adicionar informação sobre tipo de conteúdo
         if (result.contentType === 'MUSIC') {
           response += `🎵 *Detectado:* Fragmento de música\n\n`;
         } else if (result.contentType === 'QUESTION') {
           response += `❓ *Detectado:* Pergunta de conhecimento\n\n`;
-        } else {
-          response += `💬 *Detectado:* Conversa normal\n\n`;
         }
         
-        response += `📝 *Correção:*\n${result.correction}\n\n`;
         response += `💬 *Conversa:*\n${result.interactiveResponse}`;
 
         await this.sendMessage(from, response);

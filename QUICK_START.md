@@ -9,7 +9,7 @@
 ## Executar tudo com 1 comando
 
 ```bash
-git./run-project.sh
+./run-project.sh
 ```
 
 Este script fará **TUDO** automaticamente:
