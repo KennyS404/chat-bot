@@ -11,14 +11,14 @@ import QRCode from 'qrcode';
 import { config } from '../config.js';
 import { logger } from '../logger.js';
 import { AudioService } from './audioService.js';
-import { OpenAIService } from './openaiService.js';
+import { EnhancedAIService } from './enhancedAIService.js';
 import { SocketService } from './socketService.js';
 import databaseService from './databaseService.js';
 
 export class WhatsAppService {
   constructor() {
     this.audioService = new AudioService();
-    this.openaiService = new OpenAIService();
+    this.enhancedAIService = new EnhancedAIService();
     this.socketService = new SocketService();
     this.sock = null;
     this.processingMessages = new Set();
@@ -206,20 +206,20 @@ export class WhatsAppService {
           return;
         }
         
-        // Comando de teste de áudio
+        // Comando de teste de áudio (COMENTADO conforme solicitado)
         if (textMessage.toLowerCase() === 'testaudio') {
-          logger.info('Comando testaudio recebido, gerando áudio de teste...');
-          try {
-            const testText = 'Este é um teste de áudio. Se você está ouvindo isso, o sistema de voz está funcionando corretamente.';
-            const testAudio = await this.openaiService.textToSpeech(testText);
-            await this.sendMessage(from, '🔊 Enviando áudio de teste...');
-            await this.sendAudio(from, testAudio, 'Teste de áudio');
-            this.socketService.incrementMessageProcessed();
-          } catch (error) {
-            logger.error('Erro no teste de áudio:', error);
-            await this.sendMessage(from, '❌ Erro ao gerar áudio de teste');
-            this.socketService.incrementErrors();
-          }
+          logger.info('Comando testaudio recebido, mas áudio está desabilitado...');
+          await this.sendMessage(from, '🔊 Funcionalidade de áudio está temporariamente desabilitada.');
+          this.socketService.incrementMessageProcessed();
+          return;
+        }
+        
+        // Comando para limpar contexto de conversa
+        if (textMessage.toLowerCase() === 'limpar') {
+          logger.info('Comando limpar recebido, limpando contexto de conversa...');
+          this.enhancedAIService.clearConversationContext(from);
+          await this.sendMessage(from, '🧹 Contexto de conversa limpo! Podemos começar uma nova conversa.');
+          this.socketService.incrementMessageProcessed();
           return;
         }
         
@@ -282,10 +282,10 @@ export class WhatsAppService {
         const mp3Buffer = await this.audioService.downloadAndConvert(audioBuffer, messageId);
         logger.info(`Áudio convertido - Tamanho MP3: ${mp3Buffer.length} bytes`);
 
-        // Processar com OpenAI
-        logger.info('Enviando para OpenAI...');
-        const result = await this.openaiService.processAudio(mp3Buffer);
-        logger.info('Resposta da OpenAI recebida');
+        // Processar com IA Aprimorada
+        logger.info('Enviando para IA Aprimorada...');
+        const result = await this.enhancedAIService.processAudio(mp3Buffer, from);
+        logger.info('Resposta da IA Aprimorada recebida');
 
         // Atualizar transcrição no banco de dados
         await databaseService.updateAudioTranscription(
@@ -294,46 +294,55 @@ export class WhatsAppService {
           result.correction
         );
 
-        // Enviar resposta de texto
+        // Enviar resposta completa
         let response = `🎯 *Transcrição:*\n_"${result.transcription}"_\n\n`;
-        response += `📝 *Análise:*\n${result.correction}`;
+        response += `📝 *Correção:*\n${result.correction}\n\n`;
+        
+        // Adicionar informação sobre tipo de conteúdo
+        if (result.contentType === 'MUSIC') {
+          response += `🎵 *Detectado:* Fragmento de música\n\n`;
+        } else if (result.contentType === 'QUESTION') {
+          response += `❓ *Detectado:* Pergunta de conhecimento\n\n`;
+        }
+        
+        response += `💬 *Conversa:*\n${result.interactiveResponse}`;
 
         await this.sendMessage(from, response);
         
-        // Se houver correções, enviar também o áudio
-        if (result.hasCorrections && result.audioResponse) {
-          logger.info('Enviando áudio com a correção...');
-          try {
-            await this.sendAudio(from, result.audioResponse, result.transcription);
-            this.socketService.incrementAudioCorrected();
-          } catch (audioError) {
-            logger.error('Falha ao enviar áudio, tentando alternativa...', {
-              error: audioError.message,
-              code: audioError.code,
-              stack: audioError.stack
-            });
-            
-            // Tentar enviar como documento de áudio se PTT falhar
-            try {
-              await this.sock.sendMessage(from, {
-                document: result.audioResponse,
-                mimetype: 'audio/mpeg',
-                fileName: 'correcao_gramatical.mp3'
-              });
-              logger.info('Áudio enviado como documento');
-              this.socketService.incrementAudioCorrected();
-            } catch (docError) {
-              logger.error('Falha ao enviar áudio como documento:', {
-                error: docError.message,
-                code: docError.code,
-                stack: docError.stack
-              });
-              // Enviar mensagem informando o erro
-              await this.sendMessage(from, '⚠️ Não foi possível enviar o áudio com a correção, mas o texto está acima.');
-              this.socketService.incrementErrors();
-            }
-          }
-        }
+        // Áudio está comentado conforme solicitado
+        // if (result.hasCorrections && result.audioResponse) {
+        //   logger.info('Enviando áudio com a correção...');
+        //   try {
+        //     await this.sendAudio(from, result.audioResponse, result.transcription);
+        //     this.socketService.incrementAudioCorrected();
+        //   } catch (audioError) {
+        //     logger.error('Falha ao enviar áudio, tentando alternativa...', {
+        //       error: audioError.message,
+        //       code: audioError.code,
+        //       stack: audioError.stack
+        //     });
+        //     
+        //     // Tentar enviar como documento de áudio se PTT falhar
+        //     try {
+        //       await this.sock.sendMessage(from, {
+        //         document: result.audioResponse,
+        //         mimetype: 'audio/mpeg',
+        //         fileName: 'correcao_gramatical.mp3'
+        //       });
+        //       logger.info('Áudio enviado como documento');
+        //       this.socketService.incrementAudioCorrected();
+        //     } catch (docError) {
+        //       logger.error('Falha ao enviar áudio como documento:', {
+        //         error: docError.message,
+        //         code: docError.code,
+        //         stack: docError.stack
+        //       });
+        //       // Enviar mensagem informando o erro
+        //       await this.sendMessage(from, '⚠️ Não foi possível enviar o áudio com a correção, mas o texto está acima.');
+        //       this.socketService.incrementErrors();
+        //     }
+        //   }
+        // }
         
         logger.info('Resposta enviada com sucesso');
         this.socketService.incrementMessageProcessed();
